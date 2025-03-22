@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout Page</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 650px;
+            margin: 20px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+        .cart-container, .form-container {
+            margin-bottom: 25px;
+            padding: 20px;
+            border-radius: 10px;
+            background: #ffffff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h4 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            font-size: 16px;
+        }
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+        .cart-item span {
+            font-weight: 500;
+        }
+        .total-price {
+            font-size: 18px;
+            font-weight: bold;
+            text-align: right;
+            padding: 10px;
+        }
+        .form-group {
+            margin-bottom: 12px;
+        }
+        label {
+            font-weight: 600;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background: #28a745;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: #218838;
+        }
+        .clear-btn {
+            background: #dc3545;
+            margin-top: 12px;
+        }
+        .clear-btn:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Checkout Page</h2>
+
+    <!-- 🛒 Cart Summary Section -->
+    <div class="container cart-container">
+        <h4>Your Cart:</h4>
+        <div id="cartList"></div>
+        <button class="clear-btn" onclick="clearCart()">Clear Cart</button>
+    </div>
+
+    <!-- 📝 Checkout Form Section -->
+    <div class="container form-container">
+        <h4>Billing Details:</h4>
+        <form method="POST" action="/checkout/" id="checkoutForm">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="name">Full Name:</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Phone:</label>
+                <input type="text" id="phone" name="phone" required>
+            </div>
+
+            <div class="form-group">
+                <label for="address">Address:</label>
+                <textarea id="address" name="address" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="zipcode">Zip Code:</label>
+                <input type="text" id="zipcode" name="zipcode" required>
+            </div>
+
+            <!-- Hidden input to store cart data -->
+            <input type="hidden" id="cartData" name="cartData">
+
+            <button type="submit">Submit Order</button>
+        </form>
+    </div>
+
+    <script>
+        let cart = localStorage.getItem('cart') ? JSON.parse(localStorage.getItem('cart')) : {};
+
+        function displayCart() {
+            let cartList = document.getElementById("cartList");
+            cartList.innerHTML = "";
+            let cartItems = Object.keys(cart);
+            let totalPrice = 0;
+
+            if (cartItems.length === 0) {
+                cartList.innerHTML = "<p>Your cart is empty.</p>";
+                return;
+            }
+
+            cartItems.forEach(itemId => {
+                let item = cart[itemId];
+                let itemTotal = item.price * item.qty;
+                totalPrice += itemTotal;
+
+                let cartItemDiv = document.createElement("div");
+                cartItemDiv.classList.add("cart-item");
+                cartItemDiv.innerHTML = `
+                    <span>${item.name} (Qty: ${item.qty})</span> 
+                    <span>$${item.price.toFixed(2)} | Total: $${itemTotal.toFixed(2)}</span>
+                `;
+                cartList.appendChild(cartItemDiv);
+            });
+
+            // Display total price
+            let totalDiv = document.createElement("div");
+            totalDiv.classList.add("total-price");
+            totalDiv.innerHTML = `<hr><p>Total Price: $${totalPrice.toFixed(2)}</p>`;
+            cartList.appendChild(totalDiv);
+        }
+
+        function clearCart() {
+            localStorage.removeItem("cart");
+            cart = {};
+            displayCart();
+        }
+
+        // Store cart data when submitting checkout form
+        document.getElementById("checkoutForm").addEventListener("submit", function() {
+            document.getElementById("cartData").value = JSON.stringify(cart);
+        });
+
+        displayCart();
+    </script>
+
+</body>
+</html>

@@ -28,6 +28,27 @@
 
     <div class="container mt-5">
         <h2 class="text-center mb-4">Available Products</h2>
+            <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">Shop</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav">
+                        <li class="nav-item"><a class="nav-link active" href="#">Home</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#">Features</a></li>
+                        <!-- <li class="nav-item"><a id="cart" class="nav-link" href="#">Pricing</a></li> -->
+                       <!-- Add Cart Button with Popover -->
+                        <button id="cart" type="button" class="btn btn-secondary" data-bs-toggle="popover" data-bs-placement="bottom" title="Cart Summary" data-bs-content="Your cart is empty.">
+                            Cart(0)
+                        </button>
+                        <li class="nav-item"><a class="nav-link disabled" href="#">Disabled</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
 
         <!-- Search Form -->
         <form method="GET" action="{% url 'index' %}" class="d-flex">
@@ -42,7 +63,7 @@
                     <img src="{{ product.image }}" class="card-img-top" alt="{{ product.title }}">
 
                     <div class="card-body text-center">
-                        <h5 class="card-title">{{ product.title }}</h5>
+                        <h5 id="nm{{ product.id}}"   class="card-title">{{ product.title }}</h5>
                         <p class="card-text text-muted fw-bold">$ {{ product.price }}</p>
                         <!-- <a href="/{{ product.id }}" class="btn btn-primary btn-sm">View Details</a> -->
 
@@ -84,30 +105,77 @@
     </div>
 
 </body>
-<script type="text/javascript">
-   console.log('This is Working')
-   
-   if(localStorage.getItem('cart') == null){
-      var cart = {};
-   }
-   else{
-      cart = JSON.parse(localStorage.getItem('cart'));
-   }
+<script>
+    console.log('This is Working');
 
-   $(document).on('click','.atc',function(){
-        console.log("The add to cart button is clicked");
-        var item_id = this.id.toString();
-        console.log(item_id);
+    // Initialize Cart from Local Storage
+    let cart = localStorage.getItem('cart') ? JSON.parse(localStorage.getItem('cart')) : {};
 
-        if (cart[item_id] != undefined){
-            cart[item_id] = cart[item_id] + 1;
-        }else{
-            cart[item_id] = 1;
+    // Initialize Bootstrap Popover
+    document.addEventListener("DOMContentLoaded", function () {
+        var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+        var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+            return new bootstrap.Popover(popoverTriggerEl, {
+                container: 'body',
+                html: true, // Allows HTML content
+                content: updatePopoverContent // Set initial content function
+            });
+        });
+
+        // Function to Update Popover Content (Only Show Name & Qty)
+        function updatePopoverContent() {
+            let cartItems = Object.keys(cart);
+            if (cartItems.length === 0) {
+                return "<p>Your cart is empty.</p>";
+            } else {
+                let content = "<h6>Your Cart:</h6><ul class='list-group'>";
+                for (let itemId of cartItems) {
+                    let itemName = cart[itemId].name;
+                    let quantity = cart[itemId].qty;
+
+                    content += `<li class='list-group-item d-flex justify-content-between'>
+                                    <span>${itemName}</span>
+                                    <span class="badge bg-primary rounded-pill">${quantity}</span>
+                                </li>`;
+                }
+                content += "</ul><hr>";
+                content += `<a href='/checkout' class='btn btn-success btn-sm w-100'>🛒 Checkout</a>`;
+
+                return content;
+            }
         }
-        console.log(cart);
 
-        localStorage.setItem('cart', JSON.stringify(cart))
-   });
+        // Add to Cart Button Click Event
+        $(document).on('click', '.atc', function () {
+            console.log("The add-to-cart button is clicked");
+            var item_id = this.id.toString();
+            var itemName = document.getElementById("nm" + item_id).innerText; // Get Product Name
+            var itemPrice = parseFloat($(this).closest(".card").find(".card-text").text().replace("$", "")); // Extract price
+
+            console.log(item_id, itemName, itemPrice);
+
+            if (cart[item_id] !== undefined) {
+                cart[item_id].qty += 1; // Increase quantity
+            } else {
+                cart[item_id] = { name: itemName, qty: 1, price: itemPrice }; // Store name, quantity, and price
+            }
+
+            console.log(cart);
+            localStorage.setItem('cart', JSON.stringify(cart));
+
+            // Update Cart Button Text
+            $('#cart').text(`Cart(${Object.keys(cart).length})`);
+
+            // Update Popover Content
+            var popoverInstance = bootstrap.Popover.getInstance(document.getElementById('cart'));
+            if (popoverInstance) {
+                popoverInstance.setContent({ '.popover-body': updatePopoverContent() });
+            }
+        });
+
+        // Update cart button count on page load
+        $('#cart').text(`Cart(${Object.keys(cart).length})`);
+    });
 
 </script>
 </html>
